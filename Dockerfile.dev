@@ -1,0 +1,37 @@
+# Development Dockerfile for Rails Inventory Service with hot reload
+FROM ruby:3.2-slim
+
+# Rails app lives here
+WORKDIR /rails
+
+# Set development environment
+ENV RAILS_ENV="development" \
+    BUNDLE_PATH="/usr/local/bundle"
+
+# Install packages needed for development
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+    build-essential \
+    git \
+    libpq-dev \
+    libyaml-dev \
+    pkg-config \
+    curl \
+    && rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Install application gems
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+# Copy application code
+COPY . .
+
+# Copy startup script
+COPY start-services.sh ./
+RUN chmod +x start-services.sh
+
+# Expose ports for REST and gRPC
+EXPOSE 3000 50051
+
+# Start both HTTP and gRPC servers
+CMD ["./start-services.sh"]

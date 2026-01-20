@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Start the gRPC server
+#
+# Usage:
+#   bin/grpc
+#   GRPC_PORT=50052 bin/grpc
+
+APP_PATH = File.expand_path("../config/application", __dir__)
+require_relative "../config/boot"
+require_relative "../app/grpc/inventory_server"
+
+InventoryGrpcServer.new.start
