@@ -2,6 +2,66 @@
 
 A minimal Ruby on Rails microservice for managing inventory levels, stock movements, and reservations. Provides both REST API and gRPC interfaces.
 
+## 🎯 About This Repository
+
+This repository is part of the **ecommerce-polyrepo** project - a polyrepo setup designed for testing the [Propel](https://propel.us) code review feature across multiple microservices.
+
+### Role in Microservices Architecture
+
+The Inventory Service handles **stock management and reservations**:
+
+```
+┌──────────────┐
+│ API Gateway  │
+│   (Go/Gin)   │
+└──────┬───────┘
+       │ gRPC
+       ▼
+┌───────────────────┐
+│ Inventory Service │
+│     (Rails)       │
+│   [THIS REPO]     │
+│                   │
+│ • Stock Tracking  │
+│ • Reservations    │
+│ • Stock Movements │
+│ • Audit Trail     │
+│ • REST + gRPC     │
+└───────────────────┘
+```
+
+### Quick Start (Standalone Testing)
+
+To test this service independently:
+
+```bash
+# 1. Ensure Ruby 3.2+ is installed
+ruby -v
+
+# 2. Install dependencies
+bundle install
+
+# 3. Set up environment
+cp .env.example .env
+
+# 4. Set up database
+rails db:create db:migrate
+
+# 5. Start REST server
+rails server -p 3000
+
+# 6. (Optional) Start gRPC server in separate terminal
+ruby app/grpc/inventory_server.rb
+
+# 7. Test REST endpoints
+curl http://localhost:3000/api/v1/inventory
+curl http://localhost:3000/api/v1/inventory/SKU-12345
+```
+
+**Note:** This service can run independently with PostgreSQL for testing. For production, it integrates with other services via gRPC. The gRPC server runs on port 50051. See the [parent polyrepo](https://github.com/jasonyuezhang/ecommerce-polyrepo) for full stack setup.
+
+---
+
 ## Features
 
 - **Inventory Management**: Track stock levels per SKU and location
