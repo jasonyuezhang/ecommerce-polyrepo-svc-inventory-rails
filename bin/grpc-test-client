@@ -1,0 +1,135 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Simple gRPC test client for manual testing
+# Usage: bin/grpc-test-client [host:port]
+
+require "grpc"
+
+# Load proto files
+LIB_DIR = File.expand_path("../lib", __dir__)
+$LOAD_PATH.unshift(LIB_DIR) unless $LOAD_PATH.include?(LIB_DIR)
+
+begin
+  require "proto/inventory/v1/inventory_pb"
+  require "proto/inventory/v1/inventory_services_pb"
+rescue LoadError => e
+  puts "❌ Error: Proto files not found. Run: rake grpc:generate"
+  puts "   #{e.message}"
+  exit 1
+end
+
+# Default host and port
+HOST = ARGV[0] || "localhost:50051"
+
+puts "🔌 Connecting to gRPC server at #{HOST}"
+puts ""
+
+# Create client stub
+stub = Inventory::V1::InventoryService::Stub.new(
+  HOST,
+  :this_channel_is_insecure
+)
+
+def separator
+  puts "-" * 60
+end
+
+begin
+  # Test 1: Health Check
+  puts "📋 Test 1: Health Check"
+  separator
+  response = stub.health_check(Google::Protobuf::Empty.new)
+  puts "Status: #{response.status}"
+  puts "Message: #{response.message}"
+  puts "✅ Health check passed"
+  puts ""
+
+  # Test 2: Get Stock by SKU (will likely fail if no data)
+  puts "📋 Test 2: Get Stock by SKU"
+  separator
+  begin
+    request = Inventory::V1::GetStockBySkuRequest.new(
+      sku: "TEST-001",
+      warehouse_id: "default"
+    )
+    response = stub.get_stock_by_sku(request)
+    puts "SKU: #{response.stock.sku}"
+    puts "Quantity: #{response.stock.quantity}"
+    puts "Reserved: #{response.stock.reserved}"
+    puts "Available: #{response.stock.available}"
+    puts "✅ Get stock succeeded"
+  rescue GRPC::NotFound => e
+    puts "⚠️  Stock not found (expected if no test data): #{e.message}"
+  end
+  puts ""
+
+  # Test 3: Adjust Stock (create item and adjust)
+  puts "📋 Test 3: Adjust Stock"
+  separator
+  begin
+    request = Inventory::V1::AdjustStockRequest.new(
+      listing_id: "TEST-PRODUCT",
+      warehouse_id: "default",
+      quantity_delta: 100,
+      reason: "Initial stock from test client"
+    )
+    response = stub.adjust_stock(request)
+    puts "SKU: #{response.stock.sku}"
+    puts "New quantity: #{response.stock.quantity}"
+    puts "Movement ID: #{response.movement.id}"
+    puts "✅ Stock adjusted successfully"
+  rescue GRPC::BadStatus => e
+    puts "❌ Adjust failed: #{e.message}"
+  end
+  puts ""
+
+  # Test 4: Reserve Stock
+  puts "📋 Test 4: Reserve Stock"
+  separator
+  begin
+    request = Inventory::V1::ReserveStockRequest.new(
+      order_id: "TEST-ORDER-123",
+      items: [
+        Inventory::V1::ReservationItem.new(
+          listing_id: "TEST-PRODUCT",
+          quantity: 5
+        )
+      ],
+      expiration_seconds: 3600
+    )
+    response = stub.reserve_stock(request)
+    puts "Fully reserved: #{response.fully_reserved}"
+    puts "Reservations created: #{response.reservations.length}"
+    if response.reservations.any?
+      reservation = response.reservations.first
+      puts "  Reservation ID: #{reservation.id}"
+      puts "  SKU: #{reservation.sku}"
+      puts "  Quantity: #{reservation.quantity}"
+    end
+    puts "✅ Reservation succeeded" if response.fully_reserved
+  rescue GRPC::BadStatus => e
+    puts "❌ Reservation failed: #{e.message}"
+  end
+  puts ""
+
+  puts "🎉 All tests completed!"
+  puts ""
+  puts "To run more tests, modify this script or use grpcurl:"
+  puts "  grpcurl -plaintext \\"
+  puts "    -import-path ../proto-schemas/proto \\"
+  puts "    -proto inventory/v1/inventory.proto \\"
+  puts "    localhost:50051 \\"
+  puts "    inventory.v1.InventoryService/HealthCheck"
+
+rescue GRPC::Unavailable => e
+  puts "❌ Server unavailable: #{e.message}"
+  puts ""
+  puts "Make sure the gRPC server is running:"
+  puts "  bin/grpc-server"
+  exit 1
+rescue StandardError => e
+  puts "❌ Unexpected error: #{e.class} - #{e.message}"
+  puts e.backtrace.first(5).join("\n")
+  exit 1
+end

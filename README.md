@@ -47,18 +47,28 @@ cp .env.example .env
 # 4. Set up database
 rails db:create db:migrate
 
-# 5. Start REST server
+# 5. Generate gRPC proto stubs
+bundle exec rake grpc:generate
+
+# 6. Start both REST and gRPC servers
+bin/start-dual-server
+
+# OR start them separately:
+# Terminal 1: Rails REST API
 rails server -p 3000
 
-# 6. (Optional) Start gRPC server in separate terminal
-ruby app/grpc/inventory_server.rb
+# Terminal 2: gRPC server
+bin/grpc-server
 
 # 7. Test REST endpoints
 curl http://localhost:3000/api/v1/inventory
 curl http://localhost:3000/api/v1/inventory/SKU-12345
+
+# 8. Test gRPC (requires grpcurl)
+grpcurl -plaintext localhost:50051 inventory.v1.InventoryService/HealthCheck
 ```
 
-**Note:** This service can run independently with PostgreSQL for testing. For production, it integrates with other services via gRPC. The gRPC server runs on port 50051. See the [parent polyrepo](https://github.com/jasonyuezhang/ecommerce-polyrepo) for full stack setup.
+**Note:** This service provides both REST (port 3000) and gRPC (port 50051) interfaces. The dual-server script runs both simultaneously. For production, it integrates with other services via gRPC. See the [parent polyrepo](https://github.com/jasonyuezhang/ecommerce-polyrepo) for full stack setup and [GRPC_SETUP.md](./GRPC_SETUP.md) for detailed gRPC documentation.
 
 ---
 
@@ -94,10 +104,17 @@ bundle install
 # Setup database
 rails db:create db:migrate
 
-# Start REST server
+# Generate gRPC proto stubs
+bundle exec rake grpc:generate
+
+# Start both REST and gRPC servers
+bin/start-dual-server
+
+# OR start separately:
+# Terminal 1: REST server
 rails server -p 3000
 
-# Start gRPC server (separate process)
+# Terminal 2: gRPC server
 ruby app/grpc/inventory_server.rb
 ```
 

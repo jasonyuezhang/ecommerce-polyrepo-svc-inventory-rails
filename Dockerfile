@@ -38,6 +38,11 @@ RUN bundle lock --add-platform aarch64-linux ruby && \
 # Copy application code
 COPY . .
 
+# Generate gRPC proto stubs (requires proto-schemas)
+RUN if [ -f "../proto-schemas/proto/inventory/v1/inventory.proto" ]; then \
+      bundle exec rake grpc:generate || echo "Proto generation skipped"; \
+    fi
+
 # Final stage for app image
 FROM base
 
@@ -66,5 +71,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Entrypoint prepares the database
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Start the server by default, this can be overwritten at runtime
-CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
+# Start both REST and gRPC servers by default
+CMD ["./bin/start-dual-server"]

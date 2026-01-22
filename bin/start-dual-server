@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Start both Rails REST server and gRPC server
+
+set -e
+
+echo "🚀 Starting Inventory Service (Rails REST + gRPC)"
+echo ""
+
+# Check if database is ready
+echo "Checking database connection..."
+bundle exec rails db:migrate:status > /dev/null 2>&1 || {
+  echo "⚠️  Database not ready. Running migrations..."
+  bundle exec rails db:create db:migrate
+}
+
+# Generate proto stubs if needed
+if [ ! -d "lib/proto" ]; then
+  echo "📦 Generating gRPC proto stubs..."
+  bundle exec rake grpc:generate
+fi
+
+echo ""
+echo "Starting servers:"
+echo "  - Rails REST API on port 3000"
+echo "  - gRPC server on port 50051"
+echo ""
+
+# Function to cleanup on exit
+cleanup() {
+  echo ""
+  echo "⏹️  Shutting down servers..."
+  kill $RAILS_PID $GRPC_PID 2>/dev/null
+  wait $RAILS_PID $GRPC_PID 2>/dev/null
+  echo "✅ Servers stopped"
+  exit 0
+}
+
+trap cleanup INT TERM
+
+# Start Rails server in background
+bundle exec rails server -p 3000 -b 0.0.0.0 &
+RAILS_PID=$!
+echo "✅ Rails REST API started (PID: $RAILS_PID)"
+
+# Give Rails a moment to start
+sleep 2
+
+# Start gRPC server in background
+bundle exec bin/grpc-server &
+GRPC_PID=$!
+echo "✅ gRPC server started (PID: $GRPC_PID)"
+
+echo ""
+echo "🎉 All servers running!"
+echo ""
+echo "Press Ctrl+C to stop both servers"
+
+# Wait for both processes
+wait $RAILS_PID $GRPC_PID
