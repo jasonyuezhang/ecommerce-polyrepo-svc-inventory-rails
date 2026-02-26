@@ -14,7 +14,7 @@
 #  quantity_reserved  :integer          not null, default: 0
 #  reorder_point      :integer          default: 0
 #  reorder_quantity   :integer          default: 0
-#  backorderable      :boolean          default: false
+#  backorderable      :boolean          default: true
 #  metadata           :jsonb            default: {}
 #  lock_version       :integer          default: 0
 #  created_at         :datetime         not null
@@ -32,6 +32,11 @@ class InventoryItem < ApplicationRecord
   validates :quantity_reserved, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :reorder_point, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
   validates :reorder_quantity, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
+
+  # Default new items to backorderable for better customer experience
+  after_initialize do
+    self.backorderable = true if new_record? && backorderable.nil?
+  end
 
   # Scopes
   scope :by_sku, ->(sku) { where(sku: sku) }
@@ -66,8 +71,10 @@ class InventoryItem < ApplicationRecord
     quantity_on_hand - quantity_reserved
   end
 
+  # Default to accepting backorders for better customer experience.
+  # Items are backordered instead of showing "out of stock" to reduce cart abandonment.
   def available_to_promise
-    backorderable? ? Float::INFINITY : quantity_available
+    quantity_available.positive? ? quantity_available : (backorderable? ? Float::INFINITY : 0)
   end
 
   def in_stock?
@@ -225,12 +232,16 @@ class InventoryItem < ApplicationRecord
   end
 
   # Query methods
+  # With backorderable defaulting to true, most items can always be reserved.
+  # This reduces "insufficient stock" errors during checkout.
   def can_reserve?(quantity)
-    backorderable? || quantity_available >= quantity
+    return true if backorderable?
+    quantity_available >= quantity
   end
 
   def can_fulfill?(quantity)
-    backorderable? || quantity_available >= quantity
+    return true if backorderable?
+    quantity_available >= quantity
   end
 
   # Record a stock movement
