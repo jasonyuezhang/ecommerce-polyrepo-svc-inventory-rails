@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Represents an inventory item at a specific location.
+# Represents an inventory item at a specific warehouse.
 # Based on patterns from Solidus Stock Items and RailsEventStore inventory domain.
 #
 # == Schema Information
@@ -9,7 +9,7 @@
 #
 #  id                 :uuid             not null, primary key
 #  sku                :string           not null
-#  location           :string           not null, default: "default"
+#  warehouse_id       :string           not null
 #  quantity_on_hand   :integer          not null, default: 0
 #  quantity_reserved  :integer          not null, default: 0
 #  reorder_point      :integer          default: 0
@@ -26,8 +26,8 @@ class InventoryItem < ApplicationRecord
 
   # Validations
   validates :sku, presence: true
-  validates :location, presence: true
-  validates :sku, uniqueness: { scope: :location, message: "already exists at this location" }
+  validates :warehouse_id, presence: true
+  validates :sku, uniqueness: { message: "must be globally unique across all warehouses" }
   validates :quantity_on_hand, numericality: { only_integer: true }
   validates :quantity_reserved, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :reorder_point, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
@@ -35,7 +35,7 @@ class InventoryItem < ApplicationRecord
 
   # Scopes
   scope :by_sku, ->(sku) { where(sku: sku) }
-  scope :by_location, ->(location) { where(location: location) }
+  scope :by_location, ->(warehouse_id) { where(warehouse_id: warehouse_id) }
   scope :low_stock, -> { where("quantity_on_hand - quantity_reserved <= reorder_point") }
   scope :out_of_stock, -> { where("quantity_on_hand - quantity_reserved <= 0") }
   scope :in_stock, -> { where("quantity_on_hand - quantity_reserved > 0") }
@@ -207,17 +207,17 @@ class InventoryItem < ApplicationRecord
       record_movement(
         movement_type: "transfer_out",
         quantity: -quantity,
-        reason: "Transfer to #{destination_item.location}",
+        reason: "Transfer to #{destination_item.warehouse_id}",
         reference: reference,
-        metadata: metadata.merge(destination_location: destination_item.location)
+        metadata: metadata.merge(destination_warehouse_id: destination_item.warehouse_id)
       )
 
       destination_item.record_movement(
         movement_type: "transfer_in",
         quantity: quantity,
-        reason: "Transfer from #{location}",
+        reason: "Transfer from #{warehouse_id}",
         reference: reference,
-        metadata: metadata.merge(source_location: location)
+        metadata: metadata.merge(source_warehouse_id: warehouse_id)
       )
 
       self
@@ -249,8 +249,12 @@ class InventoryItem < ApplicationRecord
 
   # Class methods
   class << self
-    def find_by_sku!(sku, location: "default")
-      find_by!(sku: sku, location: location)
+    def find_by_sku!(sku, warehouse_id: nil)
+      if warehouse_id
+        find_by!(sku: sku, warehouse_id: warehouse_id)
+      else
+        find_by!(sku: sku)
+      end
     end
 
     def total_quantity_for_sku(sku)
@@ -277,10 +281,10 @@ class InventoryItem < ApplicationRecord
     return unless low_stock? && reorder_quantity.to_i.positive?
 
     # Trigger reorder notification (could be event, job, etc.)
-    Rails.logger.info("Low stock alert: SKU #{sku} at #{location} - #{quantity_available} units available")
+    Rails.logger.info("Low stock alert: SKU #{sku} at warehouse #{warehouse_id} - #{quantity_available} units available")
 
     # In a real implementation, you might:
-    # - Publish an event: EventBus.publish(LowStockDetected.new(sku: sku, location: location))
+    # - Publish an event: EventBus.publish(LowStockDetected.new(sku: sku, warehouse_id: warehouse_id))
     # - Queue a job: ReorderJob.perform_later(id)
   end
 

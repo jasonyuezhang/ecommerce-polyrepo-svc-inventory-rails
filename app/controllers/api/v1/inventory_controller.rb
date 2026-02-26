@@ -11,7 +11,7 @@ module Api
 
         # Filters
         @items = @items.by_sku(params[:sku]) if params[:sku].present?
-        @items = @items.by_location(params[:location]) if params[:location].present?
+        @items = @items.by_location(params[:warehouse_id]) if params[:warehouse_id].present?
         @items = @items.in_stock if params[:in_stock] == "true"
         @items = @items.low_stock if params[:low_stock] == "true"
         @items = @items.out_of_stock if params[:out_of_stock] == "true"
@@ -186,7 +186,7 @@ module Api
 
         params.require(:adjustments).each do |adjustment|
           begin
-            item = InventoryItem.find_by!(sku: adjustment[:sku], location: adjustment[:location] || "default")
+            item = InventoryItem.find_by!(sku: adjustment[:sku], warehouse_id: adjustment[:warehouse_id] || "default")
             result = InventoryService.adjust_stock(
               item,
               quantity: adjustment[:quantity].to_i,
@@ -215,14 +215,14 @@ module Api
       def set_inventory_item
         @inventory_item = InventoryItem.find_by!(
           sku: params[:sku],
-          location: params[:location] || "default"
+          warehouse_id: params[:warehouse_id] || "default"
         )
       end
 
       def inventory_item_params
         params.require(:inventory_item).permit(
           :sku,
-          :location,
+          :warehouse_id,
           :quantity_on_hand,
           :reorder_point,
           :reorder_quantity,
@@ -244,7 +244,7 @@ module Api
         {
           id: item.id,
           sku: item.sku,
-          location: item.location,
+          warehouse_id: item.warehouse_id,
           quantity_on_hand: item.quantity_on_hand,
           quantity_reserved: item.quantity_reserved,
           quantity_available: item.quantity_available,

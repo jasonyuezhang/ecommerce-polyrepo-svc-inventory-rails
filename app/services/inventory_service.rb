@@ -193,8 +193,8 @@ class InventoryService
 
         transfer_metadata = metadata.merge(
           transfer_id: SecureRandom.uuid,
-          source_location: source_item.location,
-          destination_location: destination_item.location
+          source_warehouse_id: source_item.warehouse_id,
+          destination_warehouse_id: destination_item.warehouse_id
         )
 
         source_movement = source_item.stock_movements.create!(
@@ -202,7 +202,7 @@ class InventoryService
           quantity: -quantity,
           quantity_before: source_quantity_before,
           quantity_after: source_item.quantity_on_hand,
-          reason: "Transfer to #{destination_item.location}",
+          reason: "Transfer to #{destination_item.warehouse_id}",
           reference_type: reference_type,
           reference_id: reference_id,
           metadata: transfer_metadata
@@ -213,7 +213,7 @@ class InventoryService
           quantity: quantity,
           quantity_before: dest_quantity_before,
           quantity_after: destination_item.quantity_on_hand,
-          reason: "Transfer from #{source_item.location}",
+          reason: "Transfer from #{source_item.warehouse_id}",
           reference_type: reference_type,
           reference_id: reference_id,
           metadata: transfer_metadata
@@ -232,9 +232,9 @@ class InventoryService
     end
 
     # Check stock availability
-    def check_availability(sku, quantity:, location: nil)
+    def check_availability(sku, quantity:, warehouse_id: nil)
       items = InventoryItem.by_sku(sku)
-      items = items.by_location(location) if location.present?
+      items = items.by_location(warehouse_id) if warehouse_id.present?
 
       total_available = items.sum(&:quantity_available)
       backorderable = items.any?(&:backorderable?)
@@ -247,7 +247,7 @@ class InventoryService
         backorderable: backorderable,
         locations: items.map do |item|
           {
-            location: item.location,
+            warehouse_id: item.warehouse_id,
             available: item.quantity_available,
             backorderable: item.backorderable?
           }
@@ -261,7 +261,7 @@ class InventoryService
         check_availability(
           item_request[:sku],
           quantity: item_request[:quantity],
-          location: item_request[:location]
+          warehouse_id: item_request[:warehouse_id]
         )
       end
     end
@@ -311,7 +311,7 @@ class InventoryService
         {
           event_type: event_type,
           sku: inventory_item.sku,
-          location: inventory_item.location,
+          warehouse_id: inventory_item.warehouse_id,
           movement_id: movement.id,
           movement_type: movement.movement_type,
           quantity: movement.quantity
