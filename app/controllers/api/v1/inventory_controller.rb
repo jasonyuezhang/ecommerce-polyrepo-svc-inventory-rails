@@ -244,7 +244,7 @@ module Api
         {
           id: item.id,
           sku: item.sku,
-          location: item.location,
+          warehouse_id: item.location,
           quantity_on_hand: item.quantity_on_hand,
           quantity_reserved: item.quantity_reserved,
           quantity_available: item.quantity_available,
