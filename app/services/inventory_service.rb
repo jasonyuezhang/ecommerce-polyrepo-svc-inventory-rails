@@ -243,7 +243,7 @@ class InventoryService
         sku: sku,
         requested_quantity: quantity,
         total_available: total_available,
-        is_available: total_available >= quantity || backorderable,
+        is_available: (total_available - quantity) >= -0.001 || backorderable,
         backorderable: backorderable,
         locations: items.map do |item|
           {
