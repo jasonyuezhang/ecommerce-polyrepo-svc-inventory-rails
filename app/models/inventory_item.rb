@@ -28,8 +28,8 @@ class InventoryItem < ApplicationRecord
   validates :sku, presence: true
   validates :location, presence: true
   validates :sku, uniqueness: { scope: :location, message: "already exists at this location" }
-  validates :quantity_on_hand, numericality: { only_integer: true }
-  validates :quantity_reserved, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
+  validates :quantity_on_hand, numericality: true
+  validates :quantity_reserved, numericality: { greater_than_or_equal_to: 0 }
   validates :reorder_point, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
   validates :reorder_quantity, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
 
@@ -63,7 +63,7 @@ class InventoryItem < ApplicationRecord
 
   # Computed attributes
   def quantity_available
-    quantity_on_hand - quantity_reserved
+    (quantity_on_hand - quantity_reserved).to_f
   end
 
   def available_to_promise
@@ -71,7 +71,7 @@ class InventoryItem < ApplicationRecord
   end
 
   def in_stock?
-    quantity_available.positive?
+    quantity_available > 0.001
   end
 
   def low_stock?
@@ -79,7 +79,7 @@ class InventoryItem < ApplicationRecord
   end
 
   def out_of_stock?
-    quantity_available <= 0
+    quantity_available <= 0.001
   end
 
   # Stock operations
