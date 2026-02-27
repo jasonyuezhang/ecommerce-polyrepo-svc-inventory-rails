@@ -77,7 +77,7 @@ module Api
       def adjust
         result = InventoryService.adjust_stock(
           @inventory_item,
-          quantity: params.require(:quantity).to_i,
+          quantity: params.require(:quantity).to_f,
           reason: params[:reason],
           reference_type: params[:reference_type],
           reference_id: params[:reference_id],
@@ -94,7 +94,7 @@ module Api
       def reserve
         result = InventoryService.reserve_stock(
           @inventory_item,
-          quantity: params.require(:quantity).to_i,
+          quantity: params.require(:quantity).to_f,
           reference_type: params[:reference_type],
           reference_id: params[:reference_id],
           metadata: params[:metadata]&.permit!&.to_h || {}
@@ -111,7 +111,7 @@ module Api
       def release
         result = InventoryService.release_reservation(
           @inventory_item,
-          quantity: params.require(:quantity).to_i,
+          quantity: params.require(:quantity).to_f,
           reference_type: params[:reference_type],
           reference_id: params[:reference_id],
           metadata: params[:metadata]&.permit!&.to_h || {}
@@ -127,7 +127,7 @@ module Api
       def commit
         result = InventoryService.commit_reservation(
           @inventory_item,
-          quantity: params.require(:quantity).to_i,
+          quantity: params.require(:quantity).to_f,
           reference_type: params[:reference_type],
           reference_id: params[:reference_id],
           metadata: params[:metadata]&.permit!&.to_h || {}
@@ -189,7 +189,7 @@ module Api
             item = InventoryItem.find_by!(sku: adjustment[:sku], location: adjustment[:location] || "default")
             result = InventoryService.adjust_stock(
               item,
-              quantity: adjustment[:quantity].to_i,
+              quantity: adjustment[:quantity].to_f,
               reason: adjustment[:reason],
               metadata: { bulk_adjustment: true }
             )
@@ -245,9 +245,9 @@ module Api
           id: item.id,
           sku: item.sku,
           location: item.location,
-          quantity_on_hand: item.quantity_on_hand,
-          quantity_reserved: item.quantity_reserved,
-          quantity_available: item.quantity_available,
+          quantity_on_hand: item.quantity_on_hand.to_f,
+          quantity_reserved: item.quantity_reserved.to_f,
+          quantity_available: item.quantity_available.to_f,
           reorder_point: item.reorder_point,
           reorder_quantity: item.reorder_quantity,
           backorderable: item.backorderable,
