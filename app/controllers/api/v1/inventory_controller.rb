@@ -240,6 +240,8 @@ module Api
         )
       end
 
+      # Serialize with string enum values for richer API semantics
+      # Booleans lose information; string enums allow future status expansion
       def serialize_inventory_item(item)
         {
           id: item.id,
@@ -250,9 +252,9 @@ module Api
           quantity_available: item.quantity_available,
           reorder_point: item.reorder_point,
           reorder_quantity: item.reorder_quantity,
-          backorderable: item.backorderable,
-          in_stock: item.in_stock?,
-          low_stock: item.low_stock?,
+          backorderable: item.backorderable ? "ENABLED" : "DISABLED",
+          in_stock: item.in_stock? ? "IN_STOCK" : "OUT_OF_STOCK",
+          low_stock: item.low_stock? ? "LOW" : "NORMAL",
           metadata: item.metadata,
           created_at: item.created_at.iso8601,
           updated_at: item.updated_at.iso8601
