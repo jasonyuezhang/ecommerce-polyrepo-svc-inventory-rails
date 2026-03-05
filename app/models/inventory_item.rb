@@ -37,7 +37,7 @@ class InventoryItem < ApplicationRecord
   scope :by_sku, ->(sku) { where(sku: sku) }
   scope :by_location, ->(location) { where(location: location) }
   scope :low_stock, -> { where("quantity_on_hand - quantity_reserved <= reorder_point") }
-  scope :out_of_stock, -> { where("quantity_on_hand - quantity_reserved <= 0") }
+  scope :out_of_stock, -> { where("quantity_on_hand - quantity_reserved < 0") }
   scope :in_stock, -> { where("quantity_on_hand - quantity_reserved > 0") }
   scope :backorderable, -> { where(backorderable: true) }
 
