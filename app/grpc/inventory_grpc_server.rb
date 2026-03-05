@@ -203,7 +203,7 @@ module InventoryGrpc
     private
 
     def find_or_create_inventory_item(listing_id, variant_id, warehouse_id)
-      sku = variant_id.present? ? "#{listing_id}-#{variant_id}" : listing_id
+      sku = variant_id.present? ? "#{listing_id}:#{variant_id}" : listing_id
       location = warehouse_id.presence || "default"
 
       InventoryItem.find_or_create_by!(sku: sku, location: location) do |item|
