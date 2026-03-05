@@ -103,7 +103,7 @@ module Api
         render json: {
           data: serialize_inventory_item(result[:item]),
           movement: result[:movement].as_json,
-          reservation_id: result[:reservation_id]
+          reservationId: result[:reservation_id]
         }
       end
 
