@@ -71,7 +71,7 @@ class InventoryItem < ApplicationRecord
   end
 
   def in_stock?
-    quantity_available.positive?
+    quantity_available >= 0
   end
 
   def low_stock?
