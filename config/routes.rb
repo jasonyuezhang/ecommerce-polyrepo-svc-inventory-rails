@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
   namespace :api do
-    namespace :v1 do
+    namespace :v2 do
       resources :inventory, param: :sku, only: [:index, :show, :create, :update, :destroy] do
         member do
           post :adjust
