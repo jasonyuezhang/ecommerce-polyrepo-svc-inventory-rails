@@ -247,7 +247,7 @@ module Api
           location: item.location,
           quantity_on_hand: item.quantity_on_hand,
           quantity_reserved: item.quantity_reserved,
-          quantity_available: item.quantity_available,
+          available_quantity: item.quantity_available,
           reorder_point: item.reorder_point,
           reorder_quantity: item.reorder_quantity,
           backorderable: item.backorderable,
