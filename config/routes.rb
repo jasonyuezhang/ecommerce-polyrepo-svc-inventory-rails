@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
-      resources :inventory, param: :sku, only: [:index, :show, :create, :update, :destroy] do
+      resources :inventory, param: :id, only: [:index, :show, :create, :update, :destroy] do
         member do
           post :adjust
           post :reserve
