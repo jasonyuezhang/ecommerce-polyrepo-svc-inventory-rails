@@ -21,7 +21,7 @@ module InventoryGrpc
   class InventoryServiceImpl < Inventory::V1::InventoryService::Service
     # GetStock retrieves stock information by SKU
     def get_stock_by_sku(request, _call)
-      item = InventoryItem.find_by!(sku: request.sku, location: request.warehouse_id.presence || "default")
+      item = InventoryItem.find_by!(sku: request.sku, location: request.warehouse_id.presence || "primary")
 
       Inventory::V1::GetStockBySkuResponse.new(
         stock: build_stock_level(item)
