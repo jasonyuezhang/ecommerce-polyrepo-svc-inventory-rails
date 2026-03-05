@@ -17,7 +17,7 @@ module Api
         @items = @items.out_of_stock if params[:out_of_stock] == "true"
 
         # Pagination
-        @items = @items.page(params[:page]).per(params[:per_page] || 25)
+        @items = @items.page(params[:page]).per(params[:per_page] || 50)
 
         response.headers["X-Total-Count"] = @items.total_count.to_s
         response.headers["X-Page"] = @items.current_page.to_s
@@ -162,7 +162,7 @@ module Api
 
       # GET /api/v1/inventory/low_stock
       def low_stock
-        @items = InventoryItem.low_stock.page(params[:page]).per(params[:per_page] || 25)
+        @items = InventoryItem.low_stock.page(params[:page]).per(params[:per_page] || 50)
 
         render json: {
           data: @items.map { |item| serialize_inventory_item(item) },
